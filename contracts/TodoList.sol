@@ -13,6 +13,7 @@ contract TodoList{
   mapping(uint => Task) public tasks;
 
   event TaskCreated(uint id, string task, bool completed);
+  event ToggleCompleted(uint _taskId);
 
   constructor() {
     createTask('checkout cryptokingpin');
@@ -28,5 +29,6 @@ contract TodoList{
     Task storage task = tasks[_taskId];
     task.completed = true;
     tasks[_taskId] = task;
+    emit ToggleCompleted(_taskId);
   }
 }

@@ -17,14 +17,29 @@ function App () {
       let result = await contractInstance.methods
         .createTask(todo)
         .send({ from: account })
-      console.log(result.logs[0].args)
+      //console.log(result.events.TaskCreated.returnValues)
+      const {id, task, completed} = result.events.TaskCreated.returnValues;
+      console.log(id, task, completed);
+      setTodos(prevTodos=>[...prevTodos,{id, task, completed}])
     } catch (error) {
       console.log(error)
     }
     setTodo('')
   }
-  const checkboxChanged = () => {
-    console.log('wohoooo')
+
+  const toggleCompleted = async (taskId) => {
+    let result = await contractInstance.methods.toggleCompleted(taskId).send({from: account});
+    if(result.status){
+      //change the status of that task completed=>true
+      const updatedTodos = todos.map((todo)=>{
+        if(todo.id === taskId){
+          return { ...todo, completed: true };
+        }
+        return todo;
+      })
+      setTodos(updatedTodos)
+      console.log(updatedTodos);
+    }
   }
 
   useEffect(() => {
@@ -51,24 +66,6 @@ function App () {
   }, [contractInstance]);
 
   useEffect(() => {
-    // if (typeof window.ethereum !== 'undefined') {
-    //   //await window.ethereum.enable()
-    //   window.web3 = new Web3(window.ethereum)
-    // window.web3.eth.getAccounts().then(accounts => {
-    //   setAccount(accounts[0])
-    // })
-    //   // Smart contract ABI (replace with your contract's ABI)
-    //   const contractABI = contractArtifact.abi
-    //   // Contract address (replace 'contract-address' with the actual contract address)
-    //   const contractAddress = contractArtifact.networks['5777'].address
-
-    //   // Create an instance of the contract
-    //   setContractInstance(
-    //     new window.web3.eth.Contract(contractABI, contractAddress)
-    //   )
-    // } else {
-    //   console.error('MetaMask is not available')
-    // }
     const init = async () => {
       console.log('init');
       try {
@@ -89,22 +86,6 @@ function App () {
     init()
   }, [])
 
-  // useEffect(() => {
-  //   if (!contractInstance) return
-  //   console.log('bam')
-  //   let eventListener = contractInstance.events.TaskCreated(
-  //     {},
-  //     (error, data) => {
-  //       if (error) console.log('Error: ' + error)
-  //       else console.log('Log data: ' + data)
-  //     }
-  //   )
-
-  //   // Cleanup function to remove the event listener when the component unmounts
-  //   return () => {
-  //     eventListener.unsubscribe()
-  //   }
-  // }, [contractInstance])
 
   return (
     <div className='App'>
@@ -113,11 +94,13 @@ function App () {
           <input type='text' value={todo} onChange={handleInputChange} />
           <button onClick={submitTodo}>Submit</button>
         </form>
-        {todos.map(todo => (
-          <div key={todo.id + Math.random()} id='todo'>
-            <input type='checkbox' onChange={checkboxChanged} />
+        {todos.sort((a, b) => a.completed - b.completed).map(todo => (
+          todo.completed ?
+          (<p id='completedTask'>{todo.task}</p>):
+          (<div key={todo.id + Math.random()} id='todo'>
+            <input type='checkbox' onChange={()=>toggleCompleted(todo.id)} />
             <p>{todo.task}</p>
-          </div>
+          </div>)
         ))}
       </header>
     </div>
